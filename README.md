@@ -1,4 +1,4 @@
-# Console Pipe
+# Claude Code Pipe
 
 通过 WebSocket 与手机双向同步 Claude CLI 的解决方案。
 

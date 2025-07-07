@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code Web Terminal</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #00ff00;
+        }
+        
+        #terminal {
+            width: 100%;
+            height: 70vh;
+            background-color: #000;
+            border: 1px solid #333;
+            padding: 10px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        
+        #input-area {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        #input {
+            flex: 1;
+            padding: 10px;
+            background-color: #333;
+            color: #00ff00;
+            border: 1px solid #555;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #send-btn {
+            padding: 10px 20px;
+            background-color: #007700;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        
+        #send-btn:hover {
+            background-color: #009900;
+        }
+        
+        .stderr {
+            color: #ff6666;
+        }
+        
+        .info {
+            color: #66ccff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Claude Code Web Terminal</h1>
+    <div id="terminal"></div>
+    <div id="input-area">
+        <input type="text" id="input" placeholder="输入命令...">
+        <button id="send-btn">发送</button>
+    </div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        const input = document.getElementById('input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        // 连接WebSocket
+        const ws = new WebSocket('ws://localhost:8080');
+        
+        function appendToTerminal(text, className = '') {
+            const div = document.createElement('div');
+            div.textContent = text;
+            if (className) {
+                div.className = className;
+            }
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        
+        ws.onopen = function() {
+            appendToTerminal('WebSocket连接已建立', 'info');
+        };
+        
+        ws.onmessage = function(event) {
+            try {
+                const message = JSON.parse(event.data);
+                switch (message.type) {
+                    case 'stdout':
+                        appendToTerminal(message.data);
+                        break;
+                    case 'stderr':
+                        appendToTerminal(message.data, 'stderr');
+                        break;
+                    case 'exit':
+                        appendToTerminal(`Claude进程退出，代码: ${message.code}`, 'info');
+                        break;
+                    case 'error':
+                        appendToTerminal(`错误: ${message.data}`, 'stderr');
+                        break;
+                }
+            } catch (e) {
+                appendToTerminal('解析消息失败: ' + event.data, 'stderr');
+            }
+        };
+        
+        ws.onclose = function() {
+            appendToTerminal('WebSocket连接已关闭', 'info');
+        };
+        
+        ws.onerror = function(error) {
+            appendToTerminal('WebSocket错误: ' + error, 'stderr');
+        };
+        
+        function sendInput() {
+            const text = input.value;
+            if (text.trim()) {
+                ws.send(JSON.stringify({
+                    type: 'input',
+                    data: text + '\n'
+                }));
+                appendToTerminal('> ' + text, 'info');
+                input.value = '';
+            }
+        }
+        
+        sendBtn.addEventListener('click', sendInput);
+        
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendInput();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -12,6 +12,7 @@
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
     "node-pty": "^1.0.0",
+    "node-pty-prebuilt-multiarch": "0.10.1-pre.5",
     "ws": "^8.18.3"
   }
 }

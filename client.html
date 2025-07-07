@@ -74,15 +74,31 @@
         const sendBtn = document.getElementById('send-btn');
         
         // 连接WebSocket
-        const ws = new WebSocket('ws://localhost:8080');
+        const ws = new WebSocket('ws://localhost:8084');
         
-        function appendToTerminal(text, className = '') {
-            const div = document.createElement('div');
-            div.textContent = text;
-            if (className) {
-                div.className = className;
+        function appendToTerminal(text, className = '', newLine = true) {
+            if (newLine) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                if (className) {
+                    div.className = className;
+                }
+                terminal.appendChild(div);
+            } else {
+                // 追加到最后一个元素
+                const lastElement = terminal.lastElementChild;
+                if (lastElement) {
+                    lastElement.textContent += text;
+                } else {
+                    // 如果没有元素，创建一个新的
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    if (className) {
+                        div.className = className;
+                    }
+                    terminal.appendChild(div);
+                }
             }
-            terminal.appendChild(div);
             terminal.scrollTop = terminal.scrollHeight;
         }
         
@@ -94,6 +110,10 @@
             try {
                 const message = JSON.parse(event.data);
                 switch (message.type) {
+                    case 'realtime':
+                        // 实时输出
+                        appendToTerminal(message.data, '', false);
+                        break;
                     case 'stdout':
                         appendToTerminal(message.data);
                         break;
